@@ -1,14 +1,24 @@
+"""
+Parsing utilities for TCX files and optional weather enrichment.
+"""
+
 from sport_activities_features.tcx_manipulation import TCXFile
 from sport_activities_features import WeatherIdentification
 
 
 class DataParser:
+    """
+    Loads raw TCX data and fetches weather context (if configured).
+    """
     def __init__(self, weather_api_key=None, time_delta=1):
         self.api_key = weather_api_key
         self.time_delta = time_delta
         self.tcx_loader = TCXFile()
 
     def _get_val(self, item, keys):
+        """
+        Safely read a value from dict-like or object-like items.
+        """
         for k in keys:
             if isinstance(item, dict):
                 if k in item:
@@ -21,7 +31,7 @@ class DataParser:
     def parse_file(self, filepath, is_training=False):
         """
         Parse a TCX file and fetch weather data (if enabled).
-        Returns a tuple: (activity_dict, weather_data_list) or None if invalid.
+        Returns (activity_dict, weather_data_list) or None if invalid.
         """
         try:
             raw = self.tcx_loader.read_one_file(filepath)

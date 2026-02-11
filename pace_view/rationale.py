@@ -1,3 +1,8 @@
+"""
+Human-readable explanations built from counterfactual signals.
+"""
+
+
 class RationaleGenerator:
     """
     Turns counterfactual signals into user-facing rationales.
@@ -18,6 +23,9 @@ class RationaleGenerator:
         self.heat_penalty_bpm = heat_penalty_bpm
 
     def build_rationales(self, df):
+        """
+        Create short, natural-language rationale statements.
+        """
         rationales = {}
 
         # 1. Wind rationale (impact distribution)
@@ -57,14 +65,20 @@ class RationaleGenerator:
         return rationales
 
     def summarize_metrics(self, df):
+        """
+        Produce compact summary metrics for a report.
+        """
         return {
             "Avg_Speed": f"{df['speed_mps'].mean() * 3.6:.1f} km/h",
             "Avg_Power": f"{df['virtual_power'].mean():.0f} W",
             "Avg_HR": f"{df['hr'].mean():.0f} bpm",
-            "Avg_Temp": f"{df['temp'].mean():.1f} °C",
+            "Avg_Temp": f"{df['temp'].mean():.1f} C",
         }
 
     def generate_conclusion(self, rationales):
+        """
+        Turn key rationales into a single concluding sentence.
+        """
         factors = []
         for value in rationales.values():
             if "NEGATIVE" in value or "HIGH" in value or "STRESS" in value:
@@ -74,6 +88,9 @@ class RationaleGenerator:
         return " | ".join(factors)
 
     def build_report(self, df):
+        """
+        Build a complete explanation report for the dashboard.
+        """
         rationales = self.build_rationales(df)
         return {
             "Analysis": "Contextual Intelligence Report",

@@ -1,3 +1,7 @@
+"""
+Orchestrates the end-to-end contextual intelligence flow for cycling data from TCX files.
+"""
+
 import os
 import pandas as pd
 from .data_parsing import DataParser
@@ -8,7 +12,11 @@ from .counterfactual import CounterfactualAnalyzer
 from .rationale import RationaleGenerator
 from .mining import PatternMiner
 
+
 class ContextTrainer:
+    """
+    High-level API that ties parsing, physics, digital twin, and XAI together.
+    """
     def __init__(self, history_folder, weather_api_key=None, time_delta=1):
         self.history_folder = history_folder
         self.parser = DataParser(weather_api_key=weather_api_key, time_delta=time_delta)
@@ -21,7 +29,7 @@ class ContextTrainer:
 
     def _process_file(self, filepath, is_training=False):
         """
-        Ports a TCX file into a DataFrame with physics and weather data (using Visual Crossing API)
+        Parse, clean, and enrich a TCX file with physics and weather features.
         """
         parsed = self.parser.parse_file(filepath, is_training=is_training)
         if parsed is None:
@@ -34,7 +42,7 @@ class ContextTrainer:
 
     def fit(self):
         """
-        Creates and trains the Digital Twin model from historical data
+        Train the Digital Twin model on all historical TCX files. This reflects component 2 of the architecture for environmental quantification.
         """
         print(f"Loading history from {self.history_folder}...")
         files = [f for f in os.listdir(self.history_folder) if f.endswith('.tcx')]
@@ -65,7 +73,7 @@ class ContextTrainer:
 
     def mine_patterns(self):
         """
-        Uses Nature-Inspired Algorithms to find global rules about the athlete
+        Mine global patterns from cached history and return a report for the dashboard.
         """
         cache_path = os.path.join(self.history_folder, "history_cache.csv")
         
@@ -91,7 +99,7 @@ class ContextTrainer:
 
     def explain(self, tcx_filepath):
         """
-        Explain a new activity file with contextual intelligence using the trained model.
+        Generate a counterfactual-based explanation for a new activity file.
         """
         print(f"Analyzing {tcx_filepath}...")
 

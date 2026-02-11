@@ -1,3 +1,7 @@
+"""
+Pattern mining for high-level behavioral rules from historical rides.
+"""
+
 import os
 import pandas as pd
 from niaarm import Dataset, get_rules
@@ -5,6 +9,9 @@ from niapy.algorithms.basic import DifferentialEvolution
 
 
 class PatternMiner:
+    """
+    Mines human-readable rules that explain performance patterns.
+    """
     def __init__(self):
         pass
 
@@ -33,6 +40,9 @@ class PatternMiner:
         return data.dropna()
 
     def _summarize_rules(self, rules):
+        """
+        Turn raw rule strings into a dashboard-friendly report.
+        """
         explanation = (
             "Patterns are mined from discretized wind, terrain, and drift signals and filtered to explain struggling episodes."
         )

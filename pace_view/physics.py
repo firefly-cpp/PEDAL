@@ -1,8 +1,15 @@
+"""
+Physics-based feature engineering for cycling activities.
+"""
+
 import numpy as np
 import pandas as pd
 
 
 class PhysicsEngine:
+    """
+    Computes virtual power and related physics signals from ride data.
+    """
     def __init__(self, rider_mass=75, bike_mass=10):
         self.mass = rider_mass + bike_mass
         self.g = 9.81

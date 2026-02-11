@@ -1,7 +1,14 @@
+"""
+Random-forest based digital twin for physiological response modeling.
+"""
+
 from sklearn.ensemble import RandomForestRegressor
 
 
 class DigitalTwinModel:
+    """
+    Fits a digital twin that predicts heart rate from physics and environment.
+    """
     def __init__(self):
         self.model = RandomForestRegressor(n_estimators=100, max_depth=15, n_jobs=-1)
         self.is_trained = False

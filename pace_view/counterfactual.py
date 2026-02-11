@@ -1,3 +1,8 @@
+"""
+Counterfactual analysis for estimating environmental impact on performance.
+"""
+
+
 class CounterfactualAnalyzer:
     """
     Counterfactual analysis using the trained Digital Twin.
@@ -9,6 +14,9 @@ class CounterfactualAnalyzer:
         self.standard_env = standard_env or {"temp": 20.0, "hum": 40.0, "ele": 100.0}
 
     def analyze(self, df_new):
+        """
+        Add counterfactual fields (env_penalty_bpm, drift, hr_predicted) to a ride.
+        """
         if not self.model.is_trained:
             raise Exception("Model not trained.")
 

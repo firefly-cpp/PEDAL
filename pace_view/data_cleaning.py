@@ -1,8 +1,15 @@
+"""
+Cleaning and alignment logic for parsed activity and weather data.
+"""
+
 import numpy as np
 import pandas as pd
 
 
 class DataCleaner:
+    """
+    Builds a clean, aligned dataframe from parsed TCX and weather data.
+    """
     def __init__(self, parser):
         self.parser = parser
 
