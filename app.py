@@ -81,7 +81,7 @@ def create_dash_app(server: Flask) -> Dash:
             apply_theme(fig4),
         )
 
-    fig1, fig2, fig3, fig4 = themed_figures("7D")
+    fig1, fig2, _, fig4 = themed_figures("7D")
 
     def fmt(value, suffix="", precision=1):
         if value is None or pd.isna(value):
@@ -283,7 +283,7 @@ def create_dash_app(server: Flask) -> Dash:
                         className="grid",
                         children=[
                             html.Div(
-                                className="card graph-card graph-card--tall",
+                                className="card graph-card graph-card--tall card--wide",
                                 children=[
                                     html.Div(
                                         className="card__header",
@@ -330,13 +330,27 @@ def create_dash_app(server: Flask) -> Dash:
                                 ],
                             ),
                             html.Div(
-                                className="card graph-card",
+                                className="card graph-card graph-card--tall card--wide",
                                 children=[
                                     html.Div(
                                         className="card__header",
                                         children=[
                                             html.H3("Efficiency Over Time", className="card__title"),
-                                            html.Div("Speed / HR", className="card__pill card__pill--alt"),
+                                            html.Div(
+                                                className="card__header-actions",
+                                                children=[
+                                                    html.Div(
+                                                        className="range-toggle",
+                                                        children=[
+                                                            html.Button("90 days", id="trend_90", n_clicks=0, className="range-btn active"),
+                                                            html.Button("180 days", id="trend_180", n_clicks=0, className="range-btn"),                                                            
+                                                            html.Button("365 days", id="trend_365", n_clicks=0, className="range-btn"),
+                                                        ],
+                                                    ),
+                                                    html.Div("Rolling trend: 90 days", id="trend_label", className="card__pill card__pill--alt"),
+                                                ],
+                                            ),
+                                            # html.Div("Speed / HR", className="card__pill card__pill--alt"),
                                         ],
                                     ),
                                     dcc.Graph(
@@ -348,7 +362,7 @@ def create_dash_app(server: Flask) -> Dash:
                                 ],
                             ),
                             html.Div(
-                                className="card graph-card card--wide",
+                                className="card graph-card graph-card--tall card--wide",
                                 children=[
                                     html.Div(
                                         className="card__header",
@@ -412,6 +426,44 @@ def create_dash_app(server: Flask) -> Dash:
         year_class = "range-btn active" if active == "year" else "range-btn"
 
         return fig1, label, week_class, month_class, year_class
+    
+    @dash_app.callback(
+        Output("fig2", "figure"),
+        Output("trend_label", "children"),
+        Output("trend_90", "className"),
+        Output("trend_180", "className"),
+        Output("trend_365", "className"),
+        Input("trend_90", "n_clicks"),
+        Input("trend_180", "n_clicks"),
+        Input("trend_365", "n_clicks"),
+    )
+    def update_trend_window(input_90, input_180, input_365):
+        trigger = dash.callback_context.triggered
+        trigger_id = trigger[0]["prop_id"].split(".")[0] if trigger else ""
+
+        if trigger_id == "trend_365":
+            window_days = 365
+            label = "Rolling trend: 365 days"
+            active = "365"
+        elif trigger_id == "trend_180":
+            window_days = 180
+            label = "Rolling trend: 180 days"
+            active = "180"
+        else:            
+            window_days = 90
+            label = "Rolling trend: 90 days"
+            active = "90"
+
+        # period here only affects fig1, so any value is fine for fig2
+        _, fig2, _, _ = reader.return_figures(total_summary, "7D", window_days)
+
+        fig2 = apply_theme(fig2)
+
+        class_90 = "range-btn active" if active == "90" else "range-btn"
+        class_180 = "range-btn active" if active == "180" else "range-btn"
+        class_365 = "range-btn active" if active == "365" else "range-btn"
+
+        return fig2, label, class_90, class_180, class_365
 
     return dash_app
 
