@@ -59,6 +59,7 @@ def create_dash_app(server: Flask) -> Dash:
                     hole=0.5,
                     textinfo="percent+label",
                     marker=dict(line=dict(color="#ffffff", width=1)),
+                    domain=dict(x=[0.15, 0.85], y=[0.1, 0.9]),
                     selector=dict(type="pie"),
                 )
                 fig.update_layout(showlegend=False)
@@ -303,15 +304,15 @@ def create_dash_app(server: Flask) -> Dash:
                                                     html.Div(
                                                         className="zone-meta",
                                                         children=[
-                                                            html.Div("Aggregated by: time in zone (HRR)", className="zone-meta__label"),
+                                                            html.Div("HRR zones", className="zone-meta__label"),
                                                             html.Div(
                                                                 className="zone-legend",
                                                                 children=[
-                                                                    html.Span("Z1 <=50% HRR", className="zone-legend__item"),
-                                                                    html.Span("Z2 50-60% HRR", className="zone-legend__item"),
-                                                                    html.Span("Z3 60-70% HRR", className="zone-legend__item"),
-                                                                    html.Span("Z4 70-80% HRR", className="zone-legend__item"),
-                                                                    html.Span("Z5 >=80% HRR", className="zone-legend__item"),
+                                                                    html.Span("Z1 <=50%", className="zone-legend__item"),
+                                                                    html.Span("Z2 50-60%", className="zone-legend__item"),
+                                                                    html.Span("Z3 60-70%", className="zone-legend__item"),
+                                                                    html.Span("Z4 70-80%", className="zone-legend__item"),
+                                                                    html.Span("Z5 >=80%", className="zone-legend__item"),
                                                                 ],
                                                             ),
                                                         ],
