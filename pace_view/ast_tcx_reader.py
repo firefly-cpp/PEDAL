@@ -221,7 +221,7 @@ class ASTTCXReader:
     # weekly_z_hours["week"] = total_summary["week"]
         
     
-    def return_figures(self, total_summary: pd.DataFrame, period):
+    def return_figures(self, total_summary: pd.DataFrame, period, window_days = 60):
         # figuero1 = plotlyy.bar(
         #     weekly_z_hours,
         #     x="week",
@@ -236,19 +236,77 @@ class ASTTCXReader:
             values="value"
         )
 
+        # fig2_df = total_summary.copy()
+        # fig2_df = fig2_df.dropna(subset=["avg_h_r"])
+        # fig2_df = fig2_df[fig2_df["speed_kmh"] > 0]
+        # fig2_df["speed_kmh_per_avg_h_r"] = fig2_df["speed_kmh"].fillna(0).div(fig2_df["avg_h_r"])
+
+        # figuero2 = plotlyy.scatter(
+        #     fig2_df,
+        #     x="date",
+        #     y="speed_kmh_per_avg_h_r",
+        #     #color="avg_h_r",
+        #     trendline="ols",
+        #     title="Speed/Heart-rate relation vs time"
+        # )
+
+
+ 
+        # fig2_df = total_summary.copy()
+        # fig2_df = fig2_df.dropna(subset=["avg_h_r"])
+        # fig2_df = fig2_df[fig2_df["speed_kmh"] > 0]
+        # fig2_df["speed_kmh_per_avg_h_r"] = fig2_df["speed_kmh"].fillna(0).div(fig2_df["avg_h_r"])
+
+        # figuero2 = plotlyy.scatter(
+        #     fig2_df,
+        #     x="date",
+        #     y="speed_kmh_per_avg_h_r",
+        #     #color="avg_h_r",
+        #     trendline="ols",
+        #     title="Speed/Heart-rate relation vs time"
+        # )
         fig2_df = total_summary.copy()
         fig2_df = fig2_df.dropna(subset=["avg_h_r"])
         fig2_df = fig2_df[fig2_df["speed_kmh"] > 0]
         fig2_df["speed_kmh_per_avg_h_r"] = fig2_df["speed_kmh"].fillna(0).div(fig2_df["avg_h_r"])
+        # fig2_df["year"] = fig2_df["date"].dt.year.astype(str)
+        fig2_df = fig2_df.sort_values("date")
+        fig2_df["date"] = pd.to_datetime(fig2_df["date"])
 
+        # window_days = 90
+        min_points = 3
+        x_seconds = fig2_df["date"].astype("int64") / 1e9
+
+        rolling = []
+
+        for i, current_date in enumerate(fig2_df["date"]):
+            start_date = current_date - pd.Timedelta(days=window_days)
+            mask = (fig2_df["date"] >= start_date) & (fig2_df["date"] <= current_date)
+            xs = x_seconds[mask]
+            ys = fig2_df.loc[mask, "speed_kmh_per_avg_h_r"]
+            if len(xs) >= min_points:
+                slope, intercept = np.polyfit(xs, ys, 1)
+                rolling.append(slope * x_seconds.iloc[i] + intercept)
+            else:
+                rolling.append(np.nan)
+
+        
         figuero2 = plotlyy.scatter(
             fig2_df,
             x="date",
             y="speed_kmh_per_avg_h_r",
-            #color="avg_h_r",
-            trendline="ols",
+            # facet_col="year",
+            # trendline="ols",
             title="Speed/Heart-rate relation vs time"
         )
+
+        figuero2.add_scatter(
+            x=fig2_df["date"],
+            y=rolling,
+            mode="lines",
+            name=f"{window_days}D rolling trend",
+        )
+
         # figuero.show()
 
         figuero3 = plotlyy.scatter(
