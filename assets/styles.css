@@ -329,6 +329,259 @@ body {
   word-break: break-word;
 }
 
+.activity-card {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+}
+
+.activity-list {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.activity-list__item {
+  border-radius: 14px;
+  border: var(--border);
+  background: var(--surface-2);
+}
+
+.activity-list__link {
+  display: block;
+  padding: 14px 14px 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  border-radius: 14px;
+}
+
+.activity-list__link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+}
+
+.activity-list__title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.activity-list__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.activity-list__hint {
+  margin-top: 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.activity-list__empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.activity-hero {
+  margin-bottom: 24px;
+}
+
+.conclusion-card {
+  margin-bottom: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(148, 163, 184, 0.25), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+}
+
+.conclusion-card__eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.conclusion-card__text {
+  margin: 12px 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(20px, 2.5vw, 30px);
+  line-height: 1.32;
+}
+
+.activity-back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  padding: 10px 18px;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.activity-back-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.activity-detail-card {
+  margin-bottom: 20px;
+}
+
+.activity-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 20px;
+}
+
+.activity-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.activity-explanation-card {
+  padding-bottom: 24px;
+}
+
+.activity-explanation {
+  margin: 0;
+  line-height: 1.65;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.activity-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.activity-notice {
+  margin: 14px 0 0;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.activity-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.rationale-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.rationale-card {
+  border: var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--surface-2);
+}
+
+.rationale-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.rationale-card__title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 15px;
+}
+
+.rationale-card__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.rationale-card--negative {
+  border-color: rgba(153, 27, 27, 0.22);
+  background: rgba(254, 242, 242, 0.75);
+}
+
+.rationale-card--positive {
+  border-color: rgba(6, 95, 70, 0.22);
+  background: rgba(236, 253, 245, 0.75);
+}
+
+.rationale-card--neutral {
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+.rationale-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+.rationale-badge--negative {
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.85);
+  border-color: rgba(153, 27, 27, 0.22);
+}
+
+.rationale-badge--positive {
+  color: #065f46;
+  background: rgba(209, 250, 229, 0.8);
+  border-color: rgba(6, 95, 70, 0.2);
+}
+
+.rationale-badge--neutral {
+  color: #334155;
+  background: rgba(226, 232, 240, 0.8);
+  border-color: rgba(51, 65, 85, 0.2);
+}
+
+.activity-list-simple {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.activity-list-simple__item {
+  border: var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.activity-advanced {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+}
+
+.activity-advanced__body {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .graph-card:nth-child(1) { animation-delay: 0.1s; }
 .graph-card:nth-child(2) { animation-delay: 0.18s; }
 .graph-card:nth-child(3) { animation-delay: 0.26s; }
@@ -477,6 +730,14 @@ body {
   .zone-meta,
   .zone-legend {
     align-items: flex-start;
+  }
+
+  .activity-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-back-link {
+    width: 100%;
   }
 }
 

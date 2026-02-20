@@ -3,16 +3,300 @@ import os
 import dash
 import pandas as pd
 from dash import Dash, html, dcc, Input, Output
-from flask import Flask, redirect
+from flask import Flask, abort, redirect, render_template
 from pace_view.data_parsing import DataParser
 from pace_view.data_cleaning import DataCleaner
 
+
+def format_metric(value, suffix="", precision=1):
+    if value is None or pd.isna(value):
+        return "N/A"
+    return f"{value:,.{precision}f}{suffix}"
+
+
+def format_datetime(value, date_format):
+    timestamp = pd.to_datetime(value, errors="coerce")
+    if pd.isna(timestamp):
+        return "N/A"
+    return timestamp.strftime(date_format)
+
+
+def zone_percentages(activity_row):
+    zone_seconds = []
+    for zone in range(1, 6):
+        raw_value = activity_row.get(f"z{zone}_sec", 0)
+        if raw_value is None or pd.isna(raw_value):
+            zone_seconds.append(0.0)
+        else:
+            zone_seconds.append(float(raw_value))
+
+    total_seconds = sum(zone_seconds)
+    if total_seconds <= 0:
+        return [0.0] * 5
+    return [seconds / total_seconds * 100.0 for seconds in zone_seconds]
+
+
+def build_activity_explanation(activity_row):
+    details = []
+
+    distance_km = activity_row.get("distance_km")
+    duration_min = activity_row.get("duration_min")
+    speed_kmh = activity_row.get("speed_kmh")
+    avg_h_r = activity_row.get("avg_h_r")
+
+    if pd.notna(distance_km) and pd.notna(duration_min):
+        details.append(f"Covered {distance_km:.1f} km in {duration_min:.0f} minutes.")
+    elif pd.notna(distance_km):
+        details.append(f"Covered {distance_km:.1f} km.")
+    elif pd.notna(duration_min):
+        details.append(f"Workout duration was {duration_min:.0f} minutes.")
+
+    zone_shares = zone_percentages(activity_row)
+    if sum(zone_shares) > 0:
+        dominant_zone_index = max(range(5), key=lambda idx: zone_shares[idx])
+        dominant_zone = dominant_zone_index + 1
+        details.append(
+            f"Main intensity was in Z{dominant_zone} ({zone_shares[dominant_zone_index]:.0f}% of zone time)."
+        )
+
+        hard_share = zone_shares[3] + zone_shares[4]
+        easy_share = zone_shares[0] + zone_shares[1]
+        if hard_share >= 35:
+            details.append("This was a demanding effort with extended high-intensity work (Z4-Z5).")
+        elif easy_share >= 65:
+            details.append("Intensity stayed mostly aerobic (Z1-Z2), indicating an endurance-focused ride.")
+        else:
+            details.append("The ride kept a balanced intensity profile across aerobic and threshold zones.")
+
+    if pd.notna(speed_kmh) and pd.notna(avg_h_r) and avg_h_r > 0:
+        efficiency = speed_kmh / avg_h_r
+        if efficiency >= 0.19:
+            details.append("Efficiency was strong for the recorded heart rate.")
+        elif efficiency >= 0.15:
+            details.append("Efficiency was moderate for the recorded heart rate.")
+        else:
+            details.append("Speed to heart-rate efficiency was low compared with usual endurance pacing.")
+
+    if not details:
+        return "Not enough information to build an explanation for this activity."
+
+    return " ".join(details)
+
+
+def build_activity_table(total_summary: pd.DataFrame) -> pd.DataFrame:
+    activity_table = (
+        total_summary.copy()
+        .sort_values("start_time", ascending=False)
+        .reset_index(drop=True)
+    )
+    if "source_file" not in activity_table.columns:
+        activity_table["source_file"] = None
+    activity_table["activity_id"] = activity_table.index
+    activity_table["explanation"] = activity_table.apply(build_activity_explanation, axis=1)
+    return activity_table
+
+
+def load_exercises_with_filenames(parser: DataParser, directory_name: str):
+    file_names = sorted([f for f in os.listdir(directory_name) if f.lower().endswith(".tcx")])
+    exercises = []
+    for file_name in file_names:
+        file_path = os.path.join(directory_name, file_name)
+        try:
+            exercise = parser.parse_tcx_file(file_path)
+            if exercise is not None:
+                exercises.append((file_name, exercise))
+        except Exception as exc:
+            print(f"Skipping unreadable file {file_name}: {exc}")
+    return exercises, file_names
+
+
+def initialize_context_pipeline(history_folder: str):
+    context_state = {
+        "trainer": None,
+        "pattern_report": {},
+        "activity_report_cache": {},
+        "error": None,
+        "_initialized": True,
+    }
+
+    try:
+        from pace_view.core import ContextTrainer
+    except Exception as exc:
+        context_state["error"] = f"Context pipeline import failed: {exc}"
+        return context_state
+
+    try:
+        trainer = ContextTrainer(history_folder=history_folder)
+        trainer.fit()
+        pattern_report = trainer.mine_patterns()
+
+        context_state["trainer"] = trainer
+        context_state["pattern_report"] = pattern_report if isinstance(pattern_report, dict) else {}
+    except Exception as exc:
+        context_state["error"] = f"Context pipeline initialization failed: {exc}"
+
+    return context_state
+
+
+def ensure_context_pipeline(server: Flask):
+    context_state = server.config.get("CONTEXT_PIPELINE")
+    if isinstance(context_state, dict) and context_state.get("_initialized"):
+        return context_state
+
+    history_folder = server.config.get("DATA_DIRECTORY", "")
+    if not history_folder:
+        context_state = {
+            "trainer": None,
+            "pattern_report": {},
+            "activity_report_cache": {},
+            "error": "Data directory is not configured.",
+            "_initialized": True,
+        }
+    else:
+        context_state = initialize_context_pipeline(history_folder)
+
+    server.config["CONTEXT_PIPELINE"] = context_state
+    return context_state
+
+
+def get_context_activity_report(context_state: dict, file_path: str):
+    trainer = context_state.get("trainer")
+    if trainer is None:
+        return None, context_state.get("error") or "Digital twin model is not available."
+
+    cache = context_state.setdefault("activity_report_cache", {})
+    if file_path in cache:
+        return cache[file_path], None
+
+    try:
+        report = trainer.explain(file_path)
+        cache[file_path] = report
+        return report, None
+    except Exception as exc:
+        return None, f"Activity explanation failed: {exc}"
+
+
+def format_rationale_item(title: str, raw_text):
+    text = raw_text.strip() if isinstance(raw_text, str) else "No rationale available."
+    status = "Neutral"
+    detail = text
+
+    if ":" in text:
+        prefix, suffix = text.split(":", 1)
+        if prefix.strip():
+            status = prefix.strip().replace("_", " ").title()
+            detail = suffix.strip() or text
+
+    tone_source = f"{status} {detail}".upper()
+    if any(token in tone_source for token in ("NEGATIVE", "HIGH RESISTANCE", "HEAT STRESS", "STRUGGLING")):
+        tone = "negative"
+    elif any(token in tone_source for token in ("ASSISTED", "COOLING EFFECT", "PERFECT", "STRONG")):
+        tone = "positive"
+    else:
+        tone = "neutral"
+
+    if status == "Neutral":
+        if tone == "negative":
+            status = "Challenging"
+        elif tone == "positive":
+            status = "Favorable"
+
+    return {
+        "title": title,
+        "status": status,
+        "text": detail,
+        "tone": tone,
+    }
+
 def create_flask_server() -> Flask:
     server = Flask(__name__)
+    server.config["ACTIVITY_TABLE"] = pd.DataFrame()
+    server.config["DATA_DIRECTORY"] = ""
+    server.config["CONTEXT_PIPELINE"] = {"_initialized": False}
 
     @server.get("/")
     def idx():
         return redirect("/dash/")
+
+    @server.get("/activity/<int:activity_id>")
+    def activity_detail(activity_id: int):
+        activity_table = server.config.get("ACTIVITY_TABLE")
+        if activity_table is None or activity_table.empty:
+            abort(404)
+        if activity_id < 0 or activity_id >= len(activity_table):
+            abort(404)
+
+        row = activity_table.iloc[activity_id]
+        zone_shares = zone_percentages(row)
+        default_explanation = row.get("explanation")
+        if default_explanation is None or pd.isna(default_explanation):
+            default_explanation = "No explanation available."
+
+        summary_metrics = {}
+        rationale_items = []
+        conclusion = default_explanation
+        context_error = None
+        mining_summary = "Pattern mining was not available."
+        mining_explanation = ""
+        mining_insights = []
+        mining_rules = []
+
+        context_state = ensure_context_pipeline(server)
+        data_directory = server.config.get("DATA_DIRECTORY", "")
+        source_file = row.get("source_file")
+        source_file_label = source_file if isinstance(source_file, str) and source_file else "N/A"
+
+        if isinstance(context_state, dict):
+            if context_state.get("error"):
+                context_error = context_state.get("error")
+
+            if isinstance(source_file, str) and source_file:
+                file_path = os.path.join(data_directory, source_file)
+                if os.path.exists(file_path):
+                    report, explain_error = get_context_activity_report(context_state, file_path)
+                    if explain_error and context_error is None:
+                        context_error = explain_error
+                    if isinstance(report, dict):
+                        if isinstance(report.get("Summary_Metrics"), dict):
+                            summary_metrics = report["Summary_Metrics"]
+                        if isinstance(report.get("Rationales"), dict):
+                            rationale_items = [
+                                format_rationale_item(key, value)
+                                for key, value in report["Rationales"].items()
+                            ]
+                        conclusion = report.get("Conclusion") or conclusion
+                else:
+                    context_error = context_error or f"Source file not found: {source_file}"
+
+            pattern_report = context_state.get("pattern_report")
+            if isinstance(pattern_report, dict) and pattern_report:
+                mining_summary = pattern_report.get("Summary", mining_summary)
+                mining_explanation = pattern_report.get("Explanation", "")
+                mining_insights = pattern_report.get("Insights", [])[:3]
+                mining_rules = pattern_report.get("Top_Rules", [])[:3]
+
+        activity = {
+            "id": int(row["activity_id"]),
+            "source_file": source_file_label,
+            "date_label": format_datetime(row.get("date"), "%b %d, %Y"),
+            "start_label": format_datetime(row.get("start_time"), "%b %d, %Y %H:%M"),
+            "distance_label": format_metric(row.get("distance_km"), " km", precision=1),
+            "duration_label": format_metric(row.get("duration_min"), " min", precision=0),
+            "speed_label": format_metric(row.get("speed_kmh"), " km/h", precision=1),
+            "heart_rate_label": format_metric(row.get("avg_h_r"), " bpm", precision=0),
+            "trimp_label": format_metric(row.get("trimp_bannister"), "", precision=1),
+            "zone_labels": [f"{pct:.0f}%" for pct in zone_shares],
+            "explanation": conclusion,
+            "summary_metrics": summary_metrics,
+            "rationale_items": rationale_items,
+            "mining_summary": mining_summary,
+            "mining_explanation": mining_explanation,
+            "mining_insights": mining_insights,
+            "mining_rules": mining_rules,
+            "context_error": context_error,
+        }
+
+        return render_template("activity_detail.html", activity=activity)
 
     return server
 
@@ -27,12 +311,16 @@ def create_dash_app(server: Flask) -> Dash:
 
     dirname = os.path.dirname(__file__)
     print(dirname)
-    directory_name = os.path.join(dirname, 'data')    
+    directory_name = os.path.join(dirname, 'data')
     parser = DataParser()
     cleaner = DataCleaner()
-    exercises = parser.parse_tcx_directory(directory_name)
+    exercises, file_names = load_exercises_with_filenames(parser, directory_name)
 
     total_summary = cleaner.build_dashboard(exercises)
+    activity_table = build_activity_table(total_summary)
+    server.config["ACTIVITY_TABLE"] = activity_table
+    server.config["DATA_DIRECTORY"] = directory_name
+    server.config["CONTEXT_PIPELINE"] = {"_initialized": False}
     # print(total_summary)
     # print(total_summary.head())
     # zone_cols = [f"z{k}_sec" for k in range(1, 6)]
@@ -86,11 +374,6 @@ def create_dash_app(server: Flask) -> Dash:
 
     fig1, fig2, _, fig4 = themed_figures("7D")
 
-    def fmt(value, suffix="", precision=1):
-        if value is None or pd.isna(value):
-            return "N/A"
-        return f"{value:,.{precision}f}{suffix}"
-
     total_sessions = int(len(total_summary))
     total_distance_km = total_summary["distance_km"].sum()
     total_time_hours = total_summary["duration_min"].sum() / 60.0
@@ -105,8 +388,36 @@ def create_dash_app(server: Flask) -> Dash:
         if pd.notna(data_start) and pd.notna(data_end)
         else "N/A"
     )
-    file_names = sorted([f for f in os.listdir(directory_name) if f.lower().endswith(".tcx")])
     file_count = len(file_names)
+    activity_records = activity_table.to_dict("records")
+
+    activity_list_items = [
+        html.Div(
+            className="activity-list__item",
+            children=[
+                html.A(
+                    href=f"/activity/{int(record['activity_id'])}",
+                    className="activity-list__link",
+                    children=[
+                        html.Div(
+                            format_datetime(record.get("start_time"), "%b %d, %Y %H:%M"),
+                            className="activity-list__title",
+                        ),
+                        html.Div(
+                            className="activity-list__meta",
+                            children=[
+                                html.Span(format_metric(record.get("distance_km"), " km", precision=1)),
+                                html.Span(format_metric(record.get("duration_min"), " min", precision=0)),
+                                html.Span(format_metric(record.get("speed_kmh"), " km/h", precision=1)),
+                            ],
+                        ),
+                        html.Div("Open detailed explanation", className="activity-list__hint"),
+                    ],
+                ),
+            ],
+        )
+        for record in activity_records
+    ]
 
     # df = px.data.iris()
     # fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
@@ -147,7 +458,7 @@ def create_dash_app(server: Flask) -> Dash:
                                 className="kpi-card",
                                 children=[
                                     html.Div("Total Distance", className="kpi-label"),
-                                    html.Div(fmt(total_distance_km, " km", precision=1), className="kpi-value"),
+                                    html.Div(format_metric(total_distance_km, " km", precision=1), className="kpi-value"),
                                     html.Div("All time", className="kpi-meta"),
                                 ],
                             ),
@@ -155,7 +466,7 @@ def create_dash_app(server: Flask) -> Dash:
                                 className="kpi-card",
                                 children=[
                                     html.Div("Total Time", className="kpi-label"),
-                                    html.Div(fmt(total_time_hours, " hrs", precision=1), className="kpi-value"),
+                                    html.Div(format_metric(total_time_hours, " hrs", precision=1), className="kpi-value"),
                                     html.Div("All time", className="kpi-meta"),
                                 ],
                             ),
@@ -163,7 +474,7 @@ def create_dash_app(server: Flask) -> Dash:
                                 className="kpi-card",
                                 children=[
                                     html.Div("Avg Speed", className="kpi-label"),
-                                    html.Div(fmt(avg_speed_kmh, " km/h", precision=1), className="kpi-value"),
+                                    html.Div(format_metric(avg_speed_kmh, " km/h", precision=1), className="kpi-value"),
                                     html.Div("All time", className="kpi-meta"),
                                 ],
                             ),
@@ -171,7 +482,7 @@ def create_dash_app(server: Flask) -> Dash:
                                 className="kpi-card",
                                 children=[
                                     html.Div("Avg Heart Rate", className="kpi-label"),
-                                    html.Div(fmt(avg_hr, " bpm", precision=0), className="kpi-value"),
+                                    html.Div(format_metric(avg_hr, " bpm", precision=0), className="kpi-value"),
                                     html.Div("All time", className="kpi-meta"),
                                 ],
                             ),
@@ -279,6 +590,24 @@ def create_dash_app(server: Flask) -> Dash:
                                         ],
                                     ),
                                 ],
+                            ),
+                        ],
+                    ),
+                    html.Div(
+                        className="card activity-card",
+                        children=[
+                            html.Div(
+                                className="card__header",
+                                children=[
+                                    html.H3("Activities", className="card__title"),
+                                    html.Div("Click an activity to open its explanation page", className="card__pill card__pill--alt"),
+                                ],
+                            ),
+                            html.Div(
+                                className="activity-list",
+                                children=activity_list_items
+                                if activity_list_items
+                                else [html.Div("No activities available.", className="activity-list__empty")],
                             ),
                         ],
                     ),

@@ -150,7 +150,7 @@ class DataCleaner:
             total += coeff * minutes
         return float(total)
 
-    def summarize_exercise(self, df_ex: pd.DataFrame, config: AthleteConfig) -> dict:
+    def summarize_exercise(self, df_ex: pd.DataFrame, config: AthleteConfig, source_file=None) -> dict:
         start = df_ex["time"].iloc[0]
         duration_s = float(df_ex["dt_s"].sum())
 
@@ -165,6 +165,7 @@ class DataCleaner:
         return {
             "date": start.tz_convert(None).date(),
             "start_time": start,
+            "source_file": source_file,
             "duration_s": duration_s,
             "distance_km": dist_km,
             "avg_h_r": float(df_ex["h_r"].mean(skipna=True)),
@@ -177,11 +178,12 @@ class DataCleaner:
     def exercise_summaries(self, exercises, config=None) -> pd.DataFrame:
         summaries = []
         cfg = config or AthleteConfig()
-        for (_, exercise) in exercises:
+        for (source_ref, exercise) in exercises:
             if exercise.activity_type == "Biking":
                 df_exer = self.exercise_timeframes(exercise)
                 if df_exer is not None:
-                    dict_exer = self.summarize_exercise(df_exer, cfg)
+                    source_file = source_ref if isinstance(source_ref, str) else None
+                    dict_exer = self.summarize_exercise(df_exer, cfg, source_file=source_file)
                     if dict_exer:
                         summaries.append(dict_exer)
         return pd.DataFrame(summaries).sort_values("start_time")
