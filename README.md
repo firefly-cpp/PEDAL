@@ -1,4 +1,4 @@
-# 🚴‍♂️ Physics-Augmented Contextual Explainer & Visual Interface for Endurance Workflows
+# 🚴‍♂️ Physics-Augmented Contextual Explainer and Visual Interface for Endurance Workflows
 
 **AST-Monitor-AI** is a companion repository to [AST-Monitor](https://github.com/firefly-cpp/AST-Monitor), focused on integrating **machine learning**, **data mining**, and **AI-powered insights** into cycling (and potentially running) performance analysis.
 
