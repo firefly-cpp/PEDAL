@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Activity {{ activity.id }} | PACE-VIEW</title>
+    <link rel="stylesheet" href="/dash/assets/styles.css">
+  </head>
+  <body>
+    <div class="app">
+      <div class="container">
+        <div class="hero activity-hero">
+          <div>
+            <div class="hero__eyebrow">Single Activity</div>
+            <h1 class="hero__title">Activity {{ activity.id }}</h1>
+            <p class="hero__subtitle">
+              {{ activity.start_label }}
+            </p>
+          </div>
+          <a href="/dash/" class="activity-back-link">Back to dashboard</a>
+        </div>
+
+        <div class="card conclusion-card">
+          <div class="conclusion-card__eyebrow">Digital Twin Conclusion</div>
+          <p class="conclusion-card__text">{{ activity.explanation }}</p>
+          {% if activity.context_error %}
+            <p class="activity-notice">{{ activity.context_error }}</p>
+          {% endif %}
+        </div>
+
+        <div class="activity-two-col">
+          <div class="card activity-detail-card">
+            <div class="card__header">
+              <h3 class="card__title">Session Summary</h3>
+              <div class="card__pill">{{ activity.date_label }}</div>
+            </div>
+            <div class="activity-detail-grid">
+              <div class="data-details__item">
+                <div class="data-details__label">Source file</div>
+                <div class="data-details__value">{{ activity.source_file }}</div>
+              </div>
+              <div class="data-details__item">
+                <div class="data-details__label">Distance</div>
+                <div class="data-details__value">{{ activity.distance_label }}</div>
+              </div>
+              <div class="data-details__item">
+                <div class="data-details__label">Duration</div>
+                <div class="data-details__value">{{ activity.duration_label }}</div>
+              </div>
+              <div class="data-details__item">
+                <div class="data-details__label">Average Speed</div>
+                <div class="data-details__value">{{ activity.speed_label }}</div>
+              </div>
+              <div class="data-details__item">
+                <div class="data-details__label">Average Heart Rate</div>
+                <div class="data-details__value">{{ activity.heart_rate_label }}</div>
+              </div>
+              <div class="data-details__item">
+                <div class="data-details__label">Bannister TRIMP</div>
+                <div class="data-details__value">{{ activity.trimp_label }}</div>
+              </div>
+              <div class="data-details__item">
+                <div class="data-details__label">Zone Mix</div>
+                <div class="data-details__value">
+                  Z1 {{ activity.zone_labels[0] }},
+                  Z2 {{ activity.zone_labels[1] }},
+                  Z3 {{ activity.zone_labels[2] }},
+                  Z4 {{ activity.zone_labels[3] }},
+                  Z5 {{ activity.zone_labels[4] }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card activity-detail-card">
+            <div class="card__header">
+              <h3 class="card__title">Digital Twin Metrics</h3>
+            </div>
+            {% if activity.summary_metrics %}
+              <div class="activity-stack">
+                {% for key, value in activity.summary_metrics.items() %}
+                  <div class="data-details__item">
+                    <div class="data-details__label">{{ key.replace('_', ' ') }}</div>
+                    <div class="data-details__value">{{ value }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="activity-notice">No digital twin metrics were produced for this activity.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card activity-detail-card">
+          <div class="card__header">
+            <h3 class="card__title">Rationale</h3>
+            <div class="card__pill card__pill--alt">Why this ride felt this way</div>
+          </div>
+          {% if activity.rationale_items %}
+            <div class="rationale-grid">
+              {% for item in activity.rationale_items %}
+                <article class="rationale-card rationale-card--{{ item.tone }}">
+                  <div class="rationale-card__head">
+                    <div class="rationale-card__title">{{ item.title }}</div>
+                    <span class="rationale-badge rationale-badge--{{ item.tone }}">{{ item.status }}</span>
+                  </div>
+                  <p class="rationale-card__text">{{ item.text }}</p>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="activity-notice">No rationale output was produced for this activity.</p>
+          {% endif %}
+        </div>
+
+        <details class="card activity-detail-card data-details activity-advanced">
+          <summary class="data-details__summary">
+            <span>Advanced Insights (Pattern Mining)</span>
+            <span class="data-details__hint">Tap to expand</span>
+          </summary>
+          <div class="activity-advanced__body">
+            <p class="activity-explanation">{{ activity.mining_summary }}</p>
+            {% if activity.mining_explanation %}
+              <p class="activity-note">{{ activity.mining_explanation }}</p>
+            {% endif %}
+
+            {% if activity.mining_insights %}
+              <div class="activity-list-simple">
+                {% for insight in activity.mining_insights %}
+                  <div class="activity-list-simple__item">{{ insight }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if activity.mining_rules %}
+              <div class="activity-list-simple">
+                {% for rule in activity.mining_rules %}
+                  <div class="activity-list-simple__item">{{ rule }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </details>
+      </div>
+    </div>
+  </body>
+</html>
