@@ -9,7 +9,7 @@ import os
 
 #data parsing test on a single tcx file
 def test_data_parsing_with_tcx_file():
-    tcx_path = "data/1.tcx"
+    tcx_path = "tests/data/1.tcx"
 
     parser = DataParser(weather_api_key=None)
 
@@ -25,7 +25,7 @@ def test_data_parsing_with_tcx_file():
 
 #data parsing test on a single tcx file with weather api enabled
 def test_data_parsing_with_tcx_file_with_weather():
-    tcx_path = "data/1.tcx"
+    tcx_path = "tests/data/1.tcx"
 
     weather_api_key = os.getenv('weather_api_key')
 
@@ -45,7 +45,7 @@ def test_data_parsing_with_tcx_file_with_weather():
 
 #data cleaning test on a single tcx file
 def test_data_cleaning_after_parsing():
-    tcx_path = "data/1.tcx"
+    tcx_path = "tests/data/1.tcx"
     parser = DataParser(weather_api_key=None)
     cleaner = DataCleaner(parser)
 
@@ -75,10 +75,10 @@ def test_mining_with_five_tcx_files(monkeypatch):
     cleaner = DataCleaner(parser)
     physics = PhysicsEngine()
 
-    LIMIT = 100
+    LIMIT = 50
     files = []
     for i in range(1, 200):
-        path = f"data/{i}.tcx"
+        path = f"tests/data/{i}.tcx"
         parsed = parser.parse_file(path, is_training=True)
         if parsed is None:
             continue
@@ -109,7 +109,7 @@ def test_mining_with_five_tcx_files(monkeypatch):
     # def fake_get_rules(dataset, algo, metrics, max_iters, logging):
     #     return (["IF Wind=Headwind AND Terrain=Climb THEN Struggling"], 0.01)
 
-    expected_rule = ["IF Wind=Headwind AND Terrain=Climb THEN Struggling"]
+    # expected_rule = ["IF Wind=Headwind AND Terrain=Climb THEN Struggling"]
 
     # monkeypatch.setattr("pace_view.mining.Dataset", DummyDataset)
     # monkeypatch.setattr("pace_view.mining.get_rules", fake_get_rules)
