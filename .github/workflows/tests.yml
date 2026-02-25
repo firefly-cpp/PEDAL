@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt --no-deps
           pip install pandas pytest sport-activities-features niaarm niapy --no-deps
-          pip install -e pace_view
+          pip install -e .
 
       - name: Run tests
         env:
