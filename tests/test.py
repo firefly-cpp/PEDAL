@@ -4,8 +4,11 @@ import pytest
 from pace_view.data_parsing import DataParser
 from pace_view.data_cleaning import DataCleaner
 from pace_view.physics import PhysicsEngine
+from pace_view.core import ContextTrainer
 
 import os
+
+# DO NOT CHANGE TEST DATASET - SOME ASSERTS IN TESTS RELY ON THAT
 
 #data parsing test on a single tcx file
 def test_data_parsing_with_tcx_file():
@@ -66,62 +69,27 @@ def test_data_cleaning_after_parsing():
 def test_mining_with_fifty_tcx_files(monkeypatch):
     pytest.importorskip("niaarm")
     pytest.importorskip("niapy")
+    weather_api_key = os.getenv('WEATHER_API_KEY')
+    TARGET_FILE = "tests/data/1.tcx"
 
-    from pace_view.mining import PatternMiner
+    trainer = ContextTrainer(
+        history_folder="tests/data/",
+        weather_api_key=weather_api_key
+    )
 
-    weather_api_key = os.getenv('weather_api_key')
+    trainer.fit()
 
-    parser = DataParser(weather_api_key=weather_api_key)
-    cleaner = DataCleaner(parser)
-    physics = PhysicsEngine()
+    cache_path = "tests/data/history_cache.csv"
+    df_history = pd.read_csv(cache_path)
+    assert "drift" in df_history.columns
 
-    LIMIT = 50
-    files = []
-    for i in range(1, 200):
-        path = f"tests/data/{i}.tcx"
-        parsed = parser.parse_file(path, is_training=True)
-        if parsed is None:
-            continue
-        files.append(path)
-        if len(files) == LIMIT:
-            break
+    _ = trainer.mine_patterns() or {}
+    activity_report = trainer.explain(TARGET_FILE) or {}
 
-    assert len(files) == LIMIT
+    print(activity_report)
 
-    dfs = []
-    for path in files:
-        parsed = parser.parse_file(path, is_training=True)
-        assert parsed is not None
-        activity, weather = parsed
-        df = cleaner.to_dataframe(activity, weather)
-        df = physics.calculate_virtual_power(df)
-        if df is None or df.empty or not df.notna().any().any():
-            continue
-        dfs.append(df)
-
-    assert dfs, "No usable dataframes generated for mining test."
-
-    full_history_df = pd.concat(dfs, ignore_index=True)
-    assert "headwind_mps" in full_history_df.columns
-    assert "grad" in full_history_df.columns
-
-    # monkeypatch mining so it is fast and deterministic
-    # class DummyDataset:
-    #     def __init__(self, path):
-    #         self.path = path
-
-    # def fake_get_rules(dataset, algo, metrics, max_iters, logging):
-    #     return (["IF Wind=Headwind AND Terrain=Climb THEN Struggling"], 0.01)
-
-    # expected_rule = ["IF Wind=Headwind AND Terrain=Climb THEN Struggling"]
-
-    # monkeypatch.setattr("pace_view.mining.Dataset", DummyDataset)
-    # monkeypatch.setattr("pace_view.mining.get_rules", fake_get_rules)
-
-    miner = PatternMiner()
-    report = miner.discover_rules(full_history_df)
-
-    print(report)
-
-    assert isinstance(report, dict)
-    assert "Top_Rules" in report
+    assert isinstance(activity_report, dict)
+    assert "Summary_Metrics" in activity_report
+    assert "Rationales" in activity_report
+    assert "Atmosphere" in activity_report["Rationales"]
+    assert "COOLING EFFECT" in activity_report["Rationales"]["Atmosphere"]

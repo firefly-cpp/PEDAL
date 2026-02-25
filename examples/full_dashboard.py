@@ -351,7 +351,7 @@ def create_dash_app(server: Flask) -> Dash:
     )
 
     # Load and preprocess activity data once during app bootstrap.
-    directory_name = os.path.join(PROJECT_ROOT, "data")
+    directory_name = os.path.join(PROJECT_ROOT,"examples", "data")
     parser = DataParser()
     cleaner = DataCleaner()
     exercises, file_names = load_exercises_with_filenames(parser, directory_name)

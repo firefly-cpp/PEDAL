@@ -175,6 +175,7 @@ cython_debug/
 
 examples/tcx_path
 examples/data/history_cache.csv
+tests/data/history_cache.csv
 data/*
 !data/.gitkeep
 _data
