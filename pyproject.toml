@@ -9,6 +9,9 @@ readme = "README.md"
 python = "^3.11"
 sport-activities-features = "^0.5.1"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test*.py"]
 
 [build-system]
 requires = ["poetry-core"]
