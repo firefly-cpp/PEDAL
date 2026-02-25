@@ -270,10 +270,17 @@ class DataCleaner:
             else:
                 rolling.append(np.nan)
 
+        fig2_kwargs = {}
+        line_custom_data = None
+        if "activity_id" in fig2_df.columns:
+            fig2_kwargs["custom_data"] = ["activity_id"]
+            line_custom_data = fig2_df[["activity_id"]]
+
         figuero2 = plotlyy.scatter(
             fig2_df,
             x="date",
             y="speed_kmh_per_avg_h_r",
+            **fig2_kwargs,
         )
 
         figuero2.add_scatter(
@@ -281,6 +288,7 @@ class DataCleaner:
             y=rolling,
             mode="lines",
             name=f"{window_days}D rolling trend",
+            customdata=line_custom_data,
         )
 
         figuero3 = plotlyy.scatter(
