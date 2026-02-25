@@ -34,10 +34,11 @@ packaging==26.0
 pandas==2.3.3
 pillow==12.1.1
 plotly==6.5.2
-pytest==9.0.2
+pluggy==1.6.0
 propcache==0.4.1
 Pygments==2.19.2
 pyparsing==3.3.2
+pytest==9.0.2
 python-dateutil==2.9.0.post0
 python-tcxparser==2.4.0
 pytz==2025.2
