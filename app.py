@@ -318,6 +318,11 @@ def create_dash_app(server: Flask) -> Dash:
 
     total_summary = cleaner.build_dashboard(exercises)
     activity_table = build_activity_table(total_summary)
+    total_summary_with_ids = total_summary.merge(
+        activity_table[["activity_id", "start_time", "source_file"]],
+        on=["start_time", "source_file"],
+        how="left",
+    )
     server.config["ACTIVITY_TABLE"] = activity_table
     server.config["DATA_DIRECTORY"] = directory_name
     server.config["CONTEXT_PIPELINE"] = {"_initialized": False}
@@ -364,7 +369,7 @@ def create_dash_app(server: Flask) -> Dash:
         return fig
 
     def themed_figures(period: str):
-        fig1, fig2, fig3, fig4 = cleaner.return_figures(total_summary, period)
+        fig1, fig2, fig3, fig4 = cleaner.return_figures(total_summary_with_ids, period)
         return (
             apply_theme(fig1),
             apply_theme(fig2),
@@ -425,6 +430,7 @@ def create_dash_app(server: Flask) -> Dash:
     dash_app.layout = html.Div(
         className="app",
         children=[
+            dcc.Location(id="activity_redirect", refresh=True),
             html.Div(
                 className="container",
                 children=[
@@ -561,36 +567,6 @@ def create_dash_app(server: Flask) -> Dash:
                                     ),
                                 ],
                             ),
-                            html.Details(
-                                className="data-details data-details--files",
-                                children=[
-                                    html.Summary(
-                                        [
-                                            html.Span("Show file list"),
-                                            html.Span(f"{file_count:,} files", className="data-details__hint"),
-                                        ],
-                                        className="data-details__summary",
-                                    ),
-                                    html.Div(
-                                        className="data-details__body",
-                                        children=[
-                                            html.Div(
-                                                className="data-details__item data-details__item--full",
-                                                children=[
-                                                    html.Div("Files in ./data", className="data-details__label"),
-                                                    html.Div(
-                                                        className="file-list",
-                                                        children=[
-                                                            html.Div(name, className="file-list__item")
-                                                            for name in (file_names or ["No .tcx files found"])
-                                                        ],
-                                                    ),
-                                                ],
-                                            )
-                                        ],
-                                    ),
-                                ],
-                            ),
                         ],
                     ),
                     html.Div(
@@ -603,11 +579,29 @@ def create_dash_app(server: Flask) -> Dash:
                                     html.Div("Click an activity to open its explanation page", className="card__pill card__pill--alt"),
                                 ],
                             ),
-                            html.Div(
-                                className="activity-list",
-                                children=activity_list_items
-                                if activity_list_items
-                                else [html.Div("No activities available.", className="activity-list__empty")],
+                            html.Details(
+                                className="data-details data-details--activities",
+                                children=[
+                                    html.Summary(
+                                        [
+                                            html.Span(
+                                                [
+                                                    html.Span("Show activity list", className="activity-list-toggle__show"),
+                                                    html.Span("Hide activity list", className="activity-list-toggle__hide"),
+                                                ],
+                                                className="activity-list-toggle",
+                                            ),
+                                            html.Span(f"{total_sessions:,} activities", className="data-details__hint"),
+                                        ],
+                                        className="data-details__summary",
+                                    ),
+                                    html.Div(
+                                        className="activity-list",
+                                        children=activity_list_items
+                                        if activity_list_items
+                                        else [html.Div("No activities available.", className="activity-list__empty")],
+                                    ),
+                                ],
                             ),
                         ],
                     ),
@@ -787,7 +781,7 @@ def create_dash_app(server: Flask) -> Dash:
             active = "90"
 
         # period here only affects fig1, so any value is fine for fig2
-        _, fig2, _, _ = cleaner.return_figures(total_summary, "7D", window_days)
+        _, fig2, _, _ = cleaner.return_figures(total_summary_with_ids, "7D", window_days)
 
         fig2 = apply_theme(fig2)
 
@@ -796,6 +790,37 @@ def create_dash_app(server: Flask) -> Dash:
         class_365 = "range-btn active" if active == "365" else "range-btn"
 
         return fig2, label, class_90, class_180, class_365
+
+    @dash_app.callback(
+        Output("activity_redirect", "pathname"),
+        Input("fig2", "clickData"),
+        prevent_initial_call=True,
+    )
+    def open_activity_detail_from_efficiency(click_data):
+        if not click_data or not click_data.get("points"):
+            return dash.no_update
+
+        activity_id = None
+        for point in click_data["points"]:
+            custom_data = point.get("customdata")
+            if isinstance(custom_data, (list, tuple)):
+                candidate = custom_data[0] if custom_data else None
+            else:
+                candidate = custom_data
+
+            if candidate is not None and not pd.isna(candidate):
+                activity_id = candidate
+                break
+
+        if activity_id is None or pd.isna(activity_id):
+            return dash.no_update
+
+        try:
+            activity_id = int(activity_id)
+        except (TypeError, ValueError):
+            return dash.no_update
+
+        return f"/activity/{activity_id}"
 
     return dash_app
 

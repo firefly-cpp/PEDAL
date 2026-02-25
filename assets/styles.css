@@ -38,6 +38,35 @@ body {
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
 }
 
+body.page-loading {
+  cursor: progress;
+}
+
+body.page-loading::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(248, 250, 252, 0.74);
+  backdrop-filter: blur(2px);
+  z-index: 9998;
+}
+
+body.page-loading::after {
+  content: "";
+  position: fixed;
+  width: 52px;
+  height: 52px;
+  top: 50%;
+  left: 50%;
+  margin-top: -26px;
+  margin-left: -26px;
+  border-radius: 50%;
+  border: 4px solid rgba(15, 23, 42, 0.18);
+  border-top-color: #0f172a;
+  animation: pageSpin 0.8s linear infinite;
+  z-index: 9999;
+}
+
 .app {
   min-height: 100%;
   position: relative;
@@ -266,6 +295,18 @@ body {
 
 .data-details[open] .data-details__summary {
   margin-bottom: 12px;
+}
+
+.activity-list-toggle__hide {
+  display: none;
+}
+
+.data-details--activities[open] .activity-list-toggle__show {
+  display: none;
+}
+
+.data-details--activities[open] .activity-list-toggle__hide {
+  display: inline;
 }
 
 .data-details__hint {
@@ -705,6 +746,15 @@ body {
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes pageSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

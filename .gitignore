@@ -173,7 +173,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-scripts/tcx_path
+examples/tcx_path
 data
 _data
 
