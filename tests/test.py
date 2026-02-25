@@ -61,9 +61,9 @@ def test_data_cleaning_after_parsing():
     assert pd.api.types.is_numeric_dtype(df["speed_mps"])
 
 
-#test the mining on five files
+#test the mining on fifty files
 #this test only runs if niaarm is installed
-def test_mining_with_five_tcx_files(monkeypatch):
+def test_mining_with_fifty_tcx_files(monkeypatch):
     pytest.importorskip("niaarm")
     pytest.importorskip("niapy")
 
@@ -95,7 +95,11 @@ def test_mining_with_five_tcx_files(monkeypatch):
         activity, weather = parsed
         df = cleaner.to_dataframe(activity, weather)
         df = physics.calculate_virtual_power(df)
+        if df is None or df.empty or not df.notna().any().any():
+            continue
         dfs.append(df)
+
+    assert dfs, "No usable dataframes generated for mining test."
 
     full_history_df = pd.concat(dfs, ignore_index=True)
     assert "headwind_mps" in full_history_df.columns
