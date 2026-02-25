@@ -1,14 +1,22 @@
-# 🚴‍♂️ Physics-Augmented Contextual Explainer and Visual Interface for Endurance Workflows
+# 🚴‍♂️ PACE-VIEW: Explainable Cycling Intelligence Dashboard
 
-PACE-VIEW provides a framework for a full workflow for cycling activity analysis:
-- Parse raw TCX files into structured activity data
-- Clean and align signals with optional weather context
-- Compute physics-based features like headwind, gradient, and virtual power
-- Train a digital twin to predict expected physiology
-- Generate counterfactual explanations and human-readable rationales
-- Mine global patterns across historical rides
+PACE-VIEW turns raw TCX rides into decision-ready insights for athletes and coaches.  
+It combines physics-informed modeling, digital-twin prediction, and explainable AI in one interactive dashboard.
 
-The pipeline is modular, so you can use just parsing/cleaning or the full end-to-end flow.
+### 💪 Why PACE-VIEW?
+- **Dashboard-first workflow**: inspect workload, HR zone mix, efficiency trends, and per-session explanations in one place.
+- **Explainability by design**: use counterfactual analysis, rationale generation, and pattern mining to understand *why* a session felt hard or easy.
+- **Physics + ML pipeline**: quantify wind/terrain/environmental load and compare expected vs observed physiology.
+- **Modular architecture**: run the full web app or use components independently in scripts.
+
+### ↗️ Quick start
+Run the full dashboard:
+
+```
+python examples/full_dashboard.py
+```
+
+Then open an activity to view detailed explanations and decision-support outputs.
 
 - **Free software**: MIT license
 - **Python versions**: 3.8.x, 3.9.x, 3.10.x, 3.11.x, 3.12.x
