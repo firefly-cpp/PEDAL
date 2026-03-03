@@ -159,6 +159,32 @@ load_dotenv()
 api_key = os.getenv("WEATHER_API_KEY")
 ```
 
+
+## 🖼️ Dashboard Preview
+
+These screenshots show the main views provided by the example dashboard and activity detail page.
+
+### Overview dashboard
+![PACE-VIEW overview dashboard](.github/img/pace-view-dashboard-overview.png)
+The main dashboard combines session-level summary cards, dataset metadata, an activity list, and quick access to detailed explanations for individual rides.
+
+### HR Zone Mix
+![PACE-VIEW HR zone mix visualization](.github/img/pace-view-dashboard-hr-zones.png)
+This view summarizes how training time is distributed across heart-rate zones over a selectable time window.
+
+### Efficiency Over Time
+![PACE-VIEW efficiency over time visualization](.github/img/pace-view-dashboard-efficiency.png)
+This chart tracks speed-per-heartbeat efficiency across sessions and overlays a rolling trend to make longer-term changes easier to spot.
+
+### HR vs Speed x Duration
+![PACE-VIEW HR vs speed x duration heatmap](.github/img/pace-view-dashboard-heatmap.png)
+This heatmap highlights how average heart rate changes across combinations of ride duration and average speed.
+
+### Single-activity explanation page
+![PACE-VIEW single activity explanation page](.github/img/pace-view-single-activity.png)
+The activity detail page brings together the digital twin conclusion, session metrics, and rationale cards that explain why a ride felt the way it did.
+
+
 ## 🔑 License
 
 This package is distributed under the MIT License. This license can be found online
